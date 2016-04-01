@@ -3,33 +3,26 @@ defmodule Bureaucrat.MarkdownWriter do
     {:ok, file} = File.open path, [:write, :utf8]
     records = group_records(records)
     puts(file, "# API Documentation\n")
-    write_table_of_contents(records, file)
     Enum.each(records, fn {controller, records} ->
       write_controller(controller, records, file)
     end)
   end
 
-  defp write_table_of_contents(records, file) do
-    Enum.each(records, fn {controller, actions} ->
-      anchor = to_anchor(controller)
-      puts(file, "* [#{controller}](##{anchor})")
-      Enum.each(actions, fn {action, _} ->
-        anchor = to_anchor("#{controller}.#{action}")
-        puts(file, "  * [#{action}](##{anchor})")
+  defp write_controller(controller, records, file) do
+    puts(file, "## #{to_string(controller)}\n")
+
+    Enum.each(records, fn {action, records} ->
+      Enum.each(records, fn(record) ->
+        puts(file, "  * #{record.assigns.bureaucrat_desc}")
       end)
     end)
-    puts(file, "")
-  end
 
-  defp write_controller(controller, records, file) do
-    puts(file, "## #{to_string(controller)}")
     Enum.each(records, fn {action, records} ->
       write_action(action, controller, records, file)
     end)
   end
 
   defp write_action(action, controller, records, file) do
-    puts(file, "### #{controller}.#{action}")
     Enum.each(records, &(write_example(&1, file)))
   end
 
@@ -40,7 +33,7 @@ defmodule Bureaucrat.MarkdownWriter do
     end
 
     file
-    |> puts("#### #{record.assigns.bureaucrat_desc}")
+    |> puts("### #{record.assigns.bureaucrat_desc}")
     |> puts("##### Request")
     |> puts("* __Method:__ #{record.method}")
     |> puts("* __Path:__ #{path}")
