@@ -34,9 +34,17 @@ defmodule Bureaucrat.MarkdownWriter do
 
     file
     |> puts("### #{record.assigns.bureaucrat_desc}")
-    |> puts("##### Request")
+    |> puts("#### Request")
     |> puts("* __Method:__ #{record.method}")
     |> puts("* __Path:__ #{path}")
+
+    unless record.params == %{} do
+      file
+      |> puts("* __Request params:__")
+      |> puts("```")
+      |> puts(format_params(record.params))
+      |> puts("```")
+    end
 
     unless record.req_headers == [] do
       file
@@ -55,14 +63,13 @@ defmodule Bureaucrat.MarkdownWriter do
       file
       |> puts("* __Request body:__")
       |> puts("```json")
-      |> puts("#{format_body_params(record.body_params)}")
+      |> puts("#{format_params(record.body_params)}")
       |> puts("```")
     end
 
     file
-    |> puts("##### Response")
+    |> puts("#### Response")
     |> puts("* __Status__: #{record.status}")
-
 
     unless record.resp_headers == [] do
       file
@@ -85,7 +92,7 @@ defmodule Bureaucrat.MarkdownWriter do
     |> puts("")
   end
 
-  def format_body_params(params) do
+  def format_params(params) do
     {:ok, json} = Poison.encode(params, pretty: true)
     json
   end
