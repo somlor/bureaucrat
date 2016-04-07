@@ -84,12 +84,14 @@ defmodule Bureaucrat.MarkdownWriter do
       |> puts("```")
     end
 
-    file
-    |> puts("* __Response body:__")
-    |> puts("```json")
-    |> puts("#{format_resp_body(record.resp_body)}")
-    |> puts("```")
-    |> puts("")
+    unless record.resp_body == "" do
+      file
+      |> puts("* __Response body:__")
+      |> puts("```json")
+      |> puts("#{format_resp_body(record.resp_body)}")
+      |> puts("```")
+      |> puts("")
+    end
   end
 
   def format_params(params) do
