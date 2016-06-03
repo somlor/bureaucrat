@@ -103,10 +103,15 @@ defmodule Bureaucrat.MarkdownWriter do
     ""
   end
 
-  defp format_resp_body(string) do
-    {:ok, struct} = Poison.decode(string)
-    {:ok, json} = Poison.encode(struct, pretty: true)
-    json
+  defp format_resp_body(maybe_json) do
+    case Poison.decode(maybe_json) do
+      {:ok, struct} ->
+        case Poison.encode(struct, pretty: true) do
+          {:ok, json} -> json
+          _           -> maybe_json
+        end
+      _ -> maybe_json
+    end
   end
 
   defp puts(file, string) do
