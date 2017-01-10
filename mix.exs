@@ -2,12 +2,14 @@ defmodule Bureaucrat.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :bureaucrat,
-     version: "0.1.4",
-     elixir: "~> 1.0",
-     description: "Generate Phoenix API documentation from tests",
-     deps: deps,
-     package: package]
+    [
+      app: :bureaucrat,
+      version: "0.1.4",
+      elixir: "~> 1.0",
+      description: "Generate Phoenix API documentation from tests",
+      deps: deps(),
+      package: package()
+    ]
   end
 
   # Configuration for the OTP application
@@ -27,7 +29,7 @@ defmodule Bureaucrat.Mixfile do
   defp deps do
     [
      {:plug, "~> 0.14 or ~> 1.0"},
-     {:poison, github: "devinus/poison", branch: "master"}
+     {:poison, "~> 2.2.0"}
     ]
   end
 

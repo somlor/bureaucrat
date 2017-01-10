@@ -3,33 +3,26 @@ defmodule Bureaucrat.MarkdownWriter do
     {:ok, file} = File.open path, [:write, :utf8]
     records = group_records(records)
     puts(file, "# API Documentation\n")
-    write_table_of_contents(records, file)
     Enum.each(records, fn {controller, records} ->
       write_controller(controller, records, file)
     end)
   end
 
-  defp write_table_of_contents(records, file) do
-    Enum.each(records, fn {controller, actions} ->
-      anchor = to_anchor(controller)
-      puts(file, "* [#{controller}](##{anchor})")
-      Enum.each(actions, fn {action, _} ->
-        anchor = to_anchor("#{controller}.#{action}")
-        puts(file, "  * [#{action}](##{anchor})")
+  defp write_controller(controller, records, file) do
+    puts(file, "## #{to_string(controller)}\n")
+
+    Enum.each(records, fn {action, records} ->
+      Enum.each(records, fn(record) ->
+        puts(file, "  * #{record.assigns.bureaucrat_desc}")
       end)
     end)
-    puts(file, "")
-  end
 
-  defp write_controller(controller, records, file) do
-    puts(file, "## #{to_string(controller)}")
     Enum.each(records, fn {action, records} ->
       write_action(action, controller, records, file)
     end)
   end
 
   defp write_action(action, controller, records, file) do
-    puts(file, "### #{controller}.#{action}")
     Enum.each(records, &(write_example(&1, file)))
   end
 
@@ -40,10 +33,18 @@ defmodule Bureaucrat.MarkdownWriter do
     end
 
     file
-    |> puts("#### #{record.assigns.bureaucrat_desc}")
-    |> puts("##### Request")
+    |> puts("### #{record.assigns.bureaucrat_desc}")
+    |> puts("#### Request")
     |> puts("* __Method:__ #{record.method}")
     |> puts("* __Path:__ #{path}")
+
+    unless record.params == %{} do
+      file
+      |> puts("* __Request params:__")
+      |> puts("```")
+      |> puts(format_params(record.params))
+      |> puts("```")
+    end
 
     unless record.req_headers == [] do
       file
@@ -62,14 +63,13 @@ defmodule Bureaucrat.MarkdownWriter do
       file
       |> puts("* __Request body:__")
       |> puts("```json")
-      |> puts("#{format_body_params(record.body_params)}")
+      |> puts("#{format_params(record.body_params)}")
       |> puts("```")
     end
 
     file
-    |> puts("##### Response")
+    |> puts("#### Response")
     |> puts("* __Status__: #{record.status}")
-
 
     unless record.resp_headers == [] do
       file
@@ -84,15 +84,17 @@ defmodule Bureaucrat.MarkdownWriter do
       |> puts("```")
     end
 
-    file
-    |> puts("* __Response body:__")
-    |> puts("```json")
-    |> puts("#{format_resp_body(record.resp_body)}")
-    |> puts("```")
-    |> puts("")
+    unless record.resp_body == "" do
+      file
+      |> puts("* __Response body:__")
+      |> puts("```json")
+      |> puts("#{format_resp_body(record.resp_body)}")
+      |> puts("```")
+      |> puts("")
+    end
   end
 
-  def format_body_params(params) do
+  def format_params(params) do
     {:ok, json} = Poison.encode(params, pretty: true)
     json
   end
@@ -101,10 +103,15 @@ defmodule Bureaucrat.MarkdownWriter do
     ""
   end
 
-  defp format_resp_body(string) do
-    {:ok, struct} = Poison.decode(string)
-    {:ok, json} = Poison.encode(struct, pretty: true)
-    json
+  defp format_resp_body(maybe_json) do
+    case Poison.decode(maybe_json) do
+      {:ok, struct} ->
+        case Poison.encode(struct, pretty: true) do
+          {:ok, json} -> json
+          _           -> maybe_json
+        end
+      _ -> maybe_json
+    end
   end
 
   defp puts(file, string) do
